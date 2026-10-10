@@ -1,0 +1,56 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+-- Настройки времени (в секундах)
+local LOBBY_TIME = 15
+local GAME_TIME = 30
+local REWARD_COINS = 50
+
+-- Точки спавна (создайте два блока Part в Workspace и назовите их так)
+local LobbySpawn = Workspace:WaitForChild("LobbySpawn")
+local ArenaSpawn = Workspace:WaitForChild("ArenaSpawn")
+
+local function teleportAllPlayers(targetPart)
+    for _, player in ipairs(Players:GetPlayers()) do
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            -- Телепортируем игрока чуть выше блока, чтобы он не застрял
+            character.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+end
+
+local function giveRewardToSurvivors()
+    for _, player in ipairs(Players:GetPlayers()) do
+        local character = player.Character
+        -- Проверяем, жив ли еще игрок (есть ли у него здоровье > 0)
+        if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
+            local leaderstats = player:FindFirstChild("leaderstats")
+            if leaderstats then
+                local coins = leaderstats:FindFirstChild("Coins")
+                if coins then
+                    coins.Value = coins.Value + REWARD_COINS
+                end
+            end
+        end
+    end
+end
+
+-- Бесконечный игровой цикл
+while true do
+    -- ФАЗА 1: Ожидание в Лобби
+    print("Игроки в лобби. Начало раунда через " .. LOBBY_TIME .. " секунд.")
+    task.wait(LOBBY_TIME)
+
+    -- ФАЗА 2: Старт игры и телепортация на Арену
+    print("Раунд начался! Телепортация на арену...")
+    teleportAllPlayers(ArenaSpawn)
+    task.wait(GAME_TIME)
+
+    -- ФАЗА 3: Окончание раунда, выдача наград и возврат в лобби
+    print("Раунд окончен! Выдача наград...")
+    giveRewardToSurvivors()
+    teleportAllPlayers(LobbySpawn)
+    
+    task.wait(2) -- Короткая пауза перед следующим раундом
+end
